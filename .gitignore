@@ -5,3 +5,4 @@ db.sqlite3
 .env
 *.sqlite3
 # Note: staticfiles/ is NOT ignored — Vercel needs it bundled
+.vercel
