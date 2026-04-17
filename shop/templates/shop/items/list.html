@@ -1,0 +1,226 @@
+{% extends 'shop/base.html' %}
+{% block title %}Products{% endblock %}
+{% block page_title %}Products{% endblock %}
+
+{% block content %}
+<div class="d-flex align-items-center justify-content-between mb-4">
+  <div>
+    <h4 style="font-weight:800;margin:0;">Products</h4>
+    <div style="font-size:.8rem;color:var(--text-muted);">{{ items|length }} product{{ items|length|pluralize }} found</div>
+  </div>
+  <button class="btn btn-primary btn-pill px-4" data-bs-toggle="modal" data-bs-target="#addProductModal">
+    <i class="bi bi-plus-lg me-1"></i>Add Product
+  </button>
+</div>
+
+<!-- Search & Filter Bar -->
+<div class="card mb-4" style="padding:14px 18px;">
+  <form method="get" id="filterForm" class="row g-2 align-items-center">
+    <div class="col-md-5 search-wrap">
+      <i class="bi bi-search"></i>
+      <input type="text" name="q" id="searchInput" value="{{ q }}" class="form-control"
+             placeholder="Search products by name..." autocomplete="off">
+    </div>
+    <div class="col-md-4">
+      <select name="category" id="catSelect" class="form-select">
+        <option value="">All Categories</option>
+        {% for cat in categories %}
+          <option value="{{ cat.pk }}" {% if cat_filter == cat.pk|stringformat:"s" %}selected{% endif %}>{{ cat.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-md-3 d-flex gap-2">
+      <button type="submit" class="btn btn-primary flex-fill" style="border-radius:10px;">Search</button>
+      <a href="{% url 'item_list' %}" class="btn flex-fill" style="background:#f1f5f9;border-radius:10px;color:var(--text);">Clear</a>
+    </div>
+  </form>
+</div>
+
+<!-- Products Table -->
+<div class="card" style="padding:0;overflow:hidden;">
+  {% if items %}
+  <table class="modern-table w-100">
+    <thead>
+      <tr>
+        <th>Product Name</th>
+        <th>Category</th>
+        <th>Size</th>
+        <th class="text-center">Stock</th>
+        <th class="text-end">Cost Price</th>
+        <th class="text-end">Sell Price</th>
+        <th class="text-center">Margin</th>
+        <th class="text-center">Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for item in items %}
+      <tr>
+        <td>
+          <div style="font-weight:600;font-size:.875rem;">{{ item.name }}</div>
+        </td>
+        <td>
+          <span style="background:#eef2ff;color:#6366f1;padding:3px 10px;border-radius:20px;font-size:.72rem;font-weight:600;">{{ item.category.name }}</span>
+        </td>
+        <td style="font-size:.875rem;">{{ item.size }}</td>
+        <td class="text-center">
+          {% if item.quantity == 0 %}
+            <span class="p-badge out-stock">Out of Stock</span>
+          {% elif item.is_low_stock %}
+            <span class="p-badge low-stock"><i class="bi bi-exclamation-circle me-1"></i>{{ item.quantity }}</span>
+          {% else %}
+            <span class="p-badge in-stock">{{ item.quantity }}</span>
+          {% endif %}
+        </td>
+        <td class="text-end" style="font-size:.875rem;">₹{{ item.purchase_price }}</td>
+        <td class="text-end" style="font-weight:600;color:var(--primary);">₹{{ item.selling_price }}</td>
+        <td class="text-center">
+          {% if item.purchase_price > 0 %}
+            {% widthratio item.selling_price item.purchase_price 100 as raw_pct %}
+            <span style="font-size:.75rem;font-weight:700;color:var(--success);">+{{ raw_pct|add:"-100" }}%</span>
+          {% else %}—{% endif %}
+        </td>
+        <td class="text-center">
+          <div class="d-flex gap-1 justify-content-center">
+            <!-- Quick Restock inline -->
+            <button class="btn btn-sm" title="Quick Restock"
+                    style="background:#d1fae5;color:#065f46;border-radius:8px;width:32px;height:32px;padding:0;display:flex;align-items:center;justify-content:center;"
+                    data-bs-toggle="modal" data-bs-target="#restockModal{{ item.pk }}">
+              <i class="bi bi-plus-lg" style="font-size:.75rem;"></i>
+            </button>
+            <a href="{% url 'item_edit' item.pk %}" class="btn btn-sm"
+               style="background:#eef2ff;color:#6366f1;border-radius:8px;width:32px;height:32px;padding:0;display:flex;align-items:center;justify-content:center;"
+               title="Edit">
+              <i class="bi bi-pencil-fill" style="font-size:.75rem;"></i>
+            </a>
+            <form method="post" action="{% url 'item_delete' item.pk %}" class="d-inline"
+                  onsubmit="return confirm('Remove \'{{ item.name }}\' from inventory?')">
+              {% csrf_token %}
+              <button type="submit" class="btn btn-sm"
+                      style="background:#fee2e2;color:#ef4444;border-radius:8px;width:32px;height:32px;padding:0;display:flex;align-items:center;justify-content:center;"
+                      title="Remove">
+                <i class="bi bi-trash-fill" style="font-size:.75rem;"></i>
+              </button>
+            </form>
+          </div>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <div class="p-5 text-center">
+    <div style="font-size:3rem;margin-bottom:12px;">📦</div>
+    <h5 style="font-weight:700;">No products found</h5>
+    <p style="color:var(--text-muted);font-size:.875rem;">
+      {% if q or cat_filter %}No products match your search.{% else %}Add your first product to get started.{% endif %}
+    </p>
+    {% if not q and not cat_filter %}
+    <button class="btn btn-primary btn-pill px-4" data-bs-toggle="modal" data-bs-target="#addProductModal">
+      <i class="bi bi-plus-lg me-1"></i>Add Product
+    </button>
+    {% endif %}
+  </div>
+  {% endif %}
+</div>
+
+<!-- Add Product Modal (Quick Add) -->
+<div class="modal fade" id="addProductModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0" style="border-radius:20px;overflow:hidden;">
+      <div class="modal-header border-0 pt-4 pb-0 px-4">
+        <h5 class="modal-title fw-bold">Add New Product</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body px-4 pb-4">
+        <form method="post" action="{% url 'item_add' %}">
+          {% csrf_token %}
+          <input type="hidden" name="next" value="{% url 'item_list' %}">
+          <div class="row g-3">
+            <div class="col-12">
+              <label class="form-label">Product Name</label>
+              <input type="text" name="name" class="form-control" placeholder="e.g. Cotton Kurta" required>
+            </div>
+            <div class="col-6">
+              <label class="form-label">Category</label>
+              <select name="category" class="form-select" required>
+                <option value="">Select</option>
+                {% for cat in categories %}<option value="{{ cat.pk }}">{{ cat.name }}</option>{% endfor %}
+              </select>
+            </div>
+            <div class="col-6">
+              <label class="form-label">Size</label>
+              <input type="text" name="size" class="form-control" placeholder="S / M / L / XL / 32">
+            </div>
+            <div class="col-4">
+              <label class="form-label">Qty</label>
+              <input type="number" name="quantity" class="form-control" value="0" min="0" required>
+            </div>
+            <div class="col-4">
+              <label class="form-label">Cost (₹)</label>
+              <input type="number" name="purchase_price" class="form-control" step="0.01" min="0" required>
+            </div>
+            <div class="col-4">
+              <label class="form-label">Sell (₹)</label>
+              <input type="number" name="selling_price" class="form-control" step="0.01" min="0" required>
+            </div>
+          </div>
+          <button type="submit" class="btn btn-primary w-100 mt-3" style="border-radius:10px;">
+            <i class="bi bi-plus-circle me-2"></i>Add Product
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Quick Restock Modals (one per product) -->
+{% for item in items %}
+<div class="modal fade" id="restockModal{{ item.pk }}" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered modal-sm">
+    <div class="modal-content border-0" style="border-radius:18px;overflow:hidden;">
+      <div style="background:linear-gradient(135deg,#10b981,#059669);padding:16px 20px;">
+        <div style="color:#fff;font-weight:700;">Quick Restock</div>
+        <div style="color:rgba(255,255,255,.8);font-size:.78rem;">{{ item.name }} · {{ item.size }}</div>
+      </div>
+      <div class="modal-body px-4 pb-4 pt-3">
+        <div style="background:#d1fae5;border-radius:10px;padding:10px;text-align:center;margin-bottom:14px;">
+          <div style="font-size:.72rem;color:#065f46;">Current Stock</div>
+          <div style="font-size:1.8rem;font-weight:800;color:#065f46;">{{ item.quantity }}</div>
+        </div>
+        <form method="post" action="{% url 'item_edit' item.pk %}">
+          {% csrf_token %}
+          <label class="form-label" style="font-size:.78rem;">Add Quantity</label>
+          <div class="input-group mb-3">
+            <button type="button" class="btn" style="background:#f1f5f9;border:1px solid var(--border);border-right:none;"
+                    onclick="let i=this.nextElementSibling;if(i.value>1)i.value=parseInt(i.value)-1;">−</button>
+            <input type="number" name="restock_qty" class="form-control text-center fw-bold" value="10" min="1" style="border-left:none;border-right:none;">
+            <button type="button" class="btn" style="background:#f1f5f9;border:1px solid var(--border);border-left:none;"
+                    onclick="let i=this.previousElementSibling;i.value=parseInt(i.value)+1;">+</button>
+          </div>
+          <button type="submit" name="restock" class="btn w-100" style="background:#10b981;color:#fff;border-radius:10px;font-weight:600;">
+            Add to Stock
+          </button>
+        </form>
+        <button type="button" class="btn w-100 mt-2" style="background:#f1f5f9;border-radius:10px;font-size:.83rem;color:var(--text);" data-bs-dismiss="modal">Cancel</button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endfor %}
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  // Enter key on category dropdown submits form
+  document.getElementById('catSelect').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') { e.preventDefault(); document.getElementById('filterForm').submit(); }
+  });
+  // Live search with 400ms debounce
+  let timer;
+  document.getElementById('searchInput').addEventListener('input', function() {
+    clearTimeout(timer);
+    timer = setTimeout(() => document.getElementById('filterForm').submit(), 400);
+  });
+</script>
+{% endblock %}

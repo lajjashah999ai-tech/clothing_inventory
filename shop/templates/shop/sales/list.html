@@ -1,0 +1,66 @@
+{% extends 'shop/base.html' %}
+{% block title %}Sales History{% endblock %}
+{% block page_title %}Sales History{% endblock %}
+
+{% block content %}
+<div class="d-flex align-items-center justify-content-between mb-4">
+  <div>
+    <h4 style="font-weight:800;margin:0;">Sales History</h4>
+    <div style="font-size:.8rem;color:var(--text-muted);">{{ sales|length }} transaction{{ sales|length|pluralize }}</div>
+  </div>
+  <a href="{% url 'pos' %}" class="btn btn-primary btn-pill px-4">
+    <i class="bi bi-plus-lg me-1"></i>New Sale
+  </a>
+</div>
+
+<div class="card" style="padding:0;overflow:hidden;">
+  {% if sales %}
+  <table class="modern-table w-100">
+    <thead>
+      <tr>
+        <th>Bill #</th>
+        <th>Date & Time</th>
+        <th>Products</th>
+        <th class="text-end">Total</th>
+        <th>Notes</th>
+        <th class="text-center">Invoice</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for sale in sales %}
+      <tr>
+        <td>
+          <span style="font-weight:700;color:var(--primary);">#{{ sale.pk }}</span>
+        </td>
+        <td style="font-size:.82rem;color:var(--text-muted);">{{ sale.sale_date|date:"d M Y, h:i A" }}</td>
+        <td>
+          {% for si in sale.items.all %}
+          <span style="background:#f1f5f9;border:1px solid var(--border);border-radius:6px;padding:2px 8px;font-size:.72rem;margin:2px;display:inline-block;">
+            {{ si.item.name }} ({{ si.item.size }}) ×{{ si.quantity }}
+          </span>
+          {% endfor %}
+        </td>
+        <td class="text-end">
+          <span style="font-weight:800;color:var(--success);font-size:.95rem;">₹{{ sale.total_amount }}</span>
+        </td>
+        <td style="font-size:.8rem;color:var(--text-muted);">{{ sale.notes|default:"—" }}</td>
+        <td class="text-center">
+          <a href="{% url 'invoice' sale.pk %}" target="_blank"
+             class="btn btn-sm" style="background:#eef2ff;color:#6366f1;border-radius:8px;font-size:.75rem;padding:4px 12px;font-weight:600;">
+            <i class="bi bi-file-earmark-text me-1"></i>Bill
+          </a>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <div class="p-5 text-center">
+    <div style="font-size:3rem;margin-bottom:12px;">🧾</div>
+    <h5 style="font-weight:700;">No sales yet</h5>
+    <p style="color:var(--text-muted);">Start recording sales using the POS.</p>
+    <a href="{% url 'pos' %}" class="btn btn-primary btn-pill px-4">New Sale</a>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

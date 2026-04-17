@@ -1,0 +1,330 @@
+{% extends 'shop/base.html' %}
+{% block title %}Dashboard{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+
+{% block content %}
+
+<!-- ── Row 1: 5 Stat Cards ── -->
+<div class="row g-3 mb-4">
+  <div class="col-6 col-lg">
+    <div class="stat-card indigo card">
+      <i class="bi bi-box-seam-fill stat-icon"></i>
+      <div class="stat-label">Total Products</div>
+      <div class="stat-value">{{ total_items }}</div>
+      <div class="stat-sub">Active SKUs</div>
+    </div>
+  </div>
+  <div class="col-6 col-lg">
+    <div class="stat-card emerald card">
+      <i class="bi bi-layers-fill stat-icon"></i>
+      <div class="stat-label">Total Stock</div>
+      <div class="stat-value">{{ total_stock }}</div>
+      <div class="stat-sub">Units in hand</div>
+    </div>
+  </div>
+  <div class="col-6 col-lg">
+    <div class="stat-card amber card">
+      <i class="bi bi-exclamation-triangle-fill stat-icon"></i>
+      <div class="stat-label">Low Stock</div>
+      <div class="stat-value">{{ low_stock_count }}</div>
+      <div class="stat-sub">Need restocking</div>
+    </div>
+  </div>
+  <div class="col-6 col-lg">
+    <div class="stat-card rose card">
+      <i class="bi bi-currency-rupee stat-icon"></i>
+      <div class="stat-label">Today's Revenue</div>
+      <div class="stat-value" style="font-size:1.4rem;">₹{{ today_revenue }}</div>
+      <div class="stat-sub">{{ today_sale_count }} sale{{ today_sale_count|pluralize }}</div>
+    </div>
+  </div>
+  <div class="col-6 col-lg">
+    <div class="stat-card cyan card">
+      <i class="bi bi-wallet2 stat-icon"></i>
+      <div class="stat-label">Inventory Value</div>
+      <div class="stat-value" style="font-size:1.4rem;">₹{{ inventory_value|floatformat:"0" }}</div>
+      <div class="stat-sub">At selling price</div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Row 2: Chart + Quick Actions ── -->
+<div class="row g-3 mb-4">
+  <div class="col-lg-8">
+    <div class="card h-100">
+      <div class="card-header d-flex align-items-center justify-content-between"
+           style="background:#fff;border-bottom:1px solid var(--border);padding:14px 20px;border-radius:16px 16px 0 0;">
+        <h6 class="fw-bold mb-0">Revenue — Last 14 Days</h6>
+        <a href="{% url 'report_sales' %}" style="font-size:.78rem;color:var(--primary);font-weight:600;">Full Report →</a>
+      </div>
+      <div class="card-body pb-2">
+        <canvas id="salesChart" height="100"></canvas>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-4">
+    <div class="card h-100">
+      <div class="card-body p-3">
+        <div style="font-weight:700;font-size:.85rem;margin-bottom:14px;">Quick Actions</div>
+        <a href="{% url 'pos' %}" class="btn btn-primary w-100 mb-2" style="border-radius:10px;font-weight:600;">
+          <i class="bi bi-cart-plus me-2"></i>New Sale
+        </a>
+        <a href="{% url 'item_add' %}" class="btn w-100 mb-2" style="background:#eef2ff;color:#6366f1;border-radius:10px;font-weight:500;">
+          <i class="bi bi-plus-circle me-2"></i>Add Product
+        </a>
+        <a href="{% url 'item_bulk_add' %}" class="btn w-100 mb-2" style="background:#f3e8ff;color:#7c3aed;border-radius:10px;font-weight:500;">
+          <i class="bi bi-table me-2"></i>Bulk Add Products
+        </a>
+        <a href="{% url 'report_stock' %}" class="btn w-100 mb-2" style="background:#d1fae5;color:#065f46;border-radius:10px;font-weight:500;">
+          <i class="bi bi-clipboard2-data me-2"></i>Stock Report
+        </a>
+        <a href="{% url 'report_low_stock' %}" class="btn w-100" style="background:#fef3c7;color:#92400e;border-radius:10px;font-weight:500;">
+          <i class="bi bi-exclamation-triangle me-2"></i>Low Stock Report
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Row 3: Category Tiles ── -->
+<div class="d-flex align-items-center justify-content-between mb-3">
+  <h6 style="font-weight:800;margin:0;">Categories Overview</h6>
+  <a href="{% url 'category_list' %}" class="btn btn-sm btn-outline-primary btn-pill px-3" style="font-size:.78rem;">Manage</a>
+</div>
+<div class="row g-3 mb-4">
+  {% for cat in categories %}
+  <div class="col-6 col-md-4 col-lg-3">
+    <a href="{% url 'item_list' %}?category={{ cat.pk }}" class="cat-tile card bg-white d-block">
+      <div class="d-flex align-items-center gap-3">
+        <div class="cat-icon" style="background:{% cycle '#eef2ff' '#d1fae5' '#fef3c7' '#fee2e2' '#cffafe' '#f3e8ff' %};margin-bottom:0;flex-shrink:0;">
+          <span style="font-size:1.3rem;">{% cycle '👔' '👗' '👖' '👟' '🧣' '🎽' %}</span>
+        </div>
+        <div>
+          <div class="cat-name">{{ cat.name }}</div>
+          <div class="cat-count">{{ cat.item_count }} product{{ cat.item_count|pluralize }}</div>
+          <div style="font-size:.7rem;color:var(--text-muted);">{{ cat.total_stock|default:"0" }} units in stock</div>
+        </div>
+      </div>
+    </a>
+  </div>
+  {% empty %}
+  <div class="col-12">
+    <div class="card p-4 text-center text-muted">No categories yet. <a href="{% url 'category_list' %}">Add one</a>.</div>
+  </div>
+  {% endfor %}
+</div>
+
+<!-- ── Row 4: Product Inventory Tree (tabbed) + Top Sellers + Low Stock ── -->
+<div class="row g-3 mb-4">
+
+  <!-- Inventory by Category — tabbed -->
+  <div class="col-lg-7">
+    <div class="card h-100">
+      <div class="card-header" style="background:#fff;border-bottom:1px solid var(--border);padding:0 20px;border-radius:16px 16px 0 0;">
+        <div style="display:flex;align-items:center;gap:0;overflow-x:auto;" class="cat-tabs">
+          {% for cat in category_tree %}
+          <button class="cat-tab-btn {% if forloop.first %}active{% endif %}"
+                  onclick="switchTab('cat-{{ cat.pk }}')" id="tab-{{ cat.pk }}">
+            {{ cat.name }}
+            <span style="background:{% if forloop.first %}var(--primary){% else %}#f1f5f9{% endif %};color:{% if forloop.first %}#fff{% else %}var(--text-muted){% endif %};border-radius:99px;padding:1px 7px;font-size:.65rem;margin-left:5px;" class="tab-count-{{ cat.pk }}">{{ cat.products|length }}</span>
+          </button>
+          {% endfor %}
+        </div>
+      </div>
+      <div class="card-body p-0" style="max-height:360px;overflow-y:auto;">
+        {% for cat in category_tree %}
+        <div id="cat-{{ cat.pk }}" class="cat-tab-panel {% if not forloop.first %}d-none{% endif %}">
+          <table style="width:100%;border-collapse:collapse;">
+            <thead>
+              <tr style="background:#f8fafc;position:sticky;top:0;">
+                <th style="padding:8px 16px;font-size:.7rem;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted);font-weight:600;">Product</th>
+                <th style="padding:8px 12px;font-size:.7rem;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted);font-weight:600;">Size</th>
+                <th style="padding:8px 12px;font-size:.7rem;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted);font-weight:600;text-align:center;">Stock</th>
+                <th style="padding:8px 12px;font-size:.7rem;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted);font-weight:600;text-align:right;">Price</th>
+                <th style="padding:8px 12px;font-size:.7rem;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted);font-weight:600;text-align:right;">Margin</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for p in cat.products %}
+              <tr style="border-bottom:1px solid #f1f5f9;">
+                <td style="padding:10px 16px;font-weight:600;font-size:.83rem;">{{ p.name }}</td>
+                <td style="padding:10px 12px;font-size:.8rem;color:var(--text-muted);">{{ p.size }}</td>
+                <td style="padding:10px 12px;text-align:center;">
+                  <span class="p-badge {% if p.quantity == 0 %}out-stock{% elif p.is_low_stock %}low-stock{% else %}in-stock{% endif %}">{{ p.quantity }}</span>
+                </td>
+                <td style="padding:10px 12px;text-align:right;font-weight:600;font-size:.83rem;color:var(--primary);">₹{{ p.selling_price }}</td>
+                <td style="padding:10px 12px;text-align:right;font-size:.78rem;">
+                  {% if p.purchase_price > 0 %}
+                    {% widthratio p.selling_price p.purchase_price 100 as margin_pct %}
+                    <span style="color:var(--success);font-weight:600;">+{{ margin_pct|add:"-100" }}%</span>
+                  {% endif %}
+                </td>
+              </tr>
+              {% empty %}
+              <tr><td colspan="5" style="padding:24px;text-align:center;color:var(--text-muted);font-size:.83rem;">No products in this category.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% empty %}
+        <div class="p-4 text-center text-muted">No products added yet.</div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Right column: Top Sellers + Low Stock -->
+  <div class="col-lg-5">
+
+    <!-- Top Selling Products -->
+    <div class="card mb-3">
+      <div class="card-header d-flex align-items-center justify-content-between"
+           style="background:#fff;border-bottom:1px solid var(--border);padding:12px 18px;border-radius:16px 16px 0 0;">
+        <h6 class="fw-bold mb-0" style="font-size:.875rem;">
+          <i class="bi bi-fire me-1" style="color:#ef4444;"></i>Top Sellers
+        </h6>
+        <a href="{% url 'report_sales' %}" style="font-size:.75rem;color:var(--primary);font-weight:600;">See all</a>
+      </div>
+      <div class="card-body p-0">
+        {% for ts in top_sellers %}
+        <div class="d-flex align-items-center justify-content-between px-4 py-2"
+             style="border-bottom:1px solid var(--border);">
+          <div style="display:flex;align-items:center;gap:10px;">
+            <span style="width:22px;height:22px;border-radius:6px;background:{% cycle '#eef2ff' '#d1fae5' '#fef3c7' '#fee2e2' '#cffafe' %};display:flex;align-items:center;justify-content:center;font-size:.7rem;font-weight:700;color:{% cycle '#6366f1' '#059669' '#d97706' '#dc2626' '#0891b2' %};">{{ forloop.counter }}</span>
+            <div>
+              <div style="font-size:.82rem;font-weight:600;">{{ ts.item__name }} ({{ ts.item__size }})</div>
+              <div style="font-size:.7rem;color:var(--text-muted);">{{ ts.total_sold }} units sold</div>
+            </div>
+          </div>
+          <span style="font-weight:700;font-size:.83rem;color:var(--success);">₹{{ ts.revenue|floatformat:"0" }}</span>
+        </div>
+        {% empty %}
+        <div class="p-3 text-center text-muted" style="font-size:.82rem;">No sales yet.</div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- Low Stock -->
+    {% if low_stock_items %}
+    <div class="card">
+      <div class="card-header"
+           style="background:#fff;border-bottom:1px solid var(--border);padding:12px 18px;border-radius:16px 16px 0 0;">
+        <h6 class="mb-0 fw-bold" style="color:var(--warning);font-size:.875rem;">
+          <i class="bi bi-exclamation-triangle-fill me-1"></i>Low Stock Alert
+        </h6>
+      </div>
+      <div class="card-body p-0">
+        {% for item in low_stock_items|slice:":5" %}
+        <div class="d-flex align-items-center justify-content-between px-4 py-2"
+             style="border-bottom:1px solid var(--border);">
+          <div>
+            <div style="font-size:.82rem;font-weight:600;">{{ item.name }}</div>
+            <div style="font-size:.7rem;color:var(--text-muted);">{{ item.category.name }} · {{ item.size }}</div>
+          </div>
+          <div class="d-flex align-items-center gap-2">
+            <span class="badge {% if item.quantity == 0 %}bg-danger{% else %}bg-warning text-dark{% endif %}" style="font-size:.7rem;">{{ item.quantity }}</span>
+            <a href="{% url 'item_edit' item.pk %}" style="background:#eef2ff;color:#6366f1;font-size:.7rem;padding:3px 8px;border-radius:6px;font-weight:600;text-decoration:none;">+Stock</a>
+          </div>
+        </div>
+        {% endfor %}
+        {% if low_stock_count > 5 %}
+        <div class="text-center py-2">
+          <a href="{% url 'report_low_stock' %}" style="font-size:.78rem;color:var(--primary);font-weight:600;">View all {{ low_stock_count }} →</a>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<!-- ── Row 5: Recent Sales ── -->
+<div class="card">
+  <div class="card-header d-flex align-items-center justify-content-between"
+       style="background:#fff;border-bottom:1px solid var(--border);padding:14px 20px;border-radius:16px 16px 0 0;">
+    <h6 class="fw-bold mb-0">Recent Sales</h6>
+    <a href="{% url 'sale_list' %}" style="font-size:.78rem;color:var(--primary);font-weight:600;">View all →</a>
+  </div>
+  <div class="card-body p-0">
+    <table style="width:100%;border-collapse:collapse;">
+      <thead>
+        <tr style="background:#f8fafc;">
+          <th style="padding:10px 16px;font-size:.7rem;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted);font-weight:600;">Bill #</th>
+          <th style="padding:10px 12px;font-size:.7rem;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted);font-weight:600;">Time</th>
+          <th style="padding:10px 12px;font-size:.7rem;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted);font-weight:600;">Items</th>
+          <th style="padding:10px 12px;font-size:.7rem;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted);font-weight:600;">Payment</th>
+          <th style="padding:10px 12px;font-size:.7rem;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted);font-weight:600;text-align:right;">Amount</th>
+          <th style="padding:10px 12px;text-align:center;"></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for sale in recent_sales %}
+        <tr style="border-bottom:1px solid #f1f5f9;">
+          <td style="padding:11px 16px;font-weight:700;color:var(--primary);font-size:.83rem;">#{{ sale.pk }}</td>
+          <td style="padding:11px 12px;font-size:.78rem;color:var(--text-muted);">{{ sale.sale_date|date:"d M, h:i A" }}</td>
+          <td style="padding:11px 12px;font-size:.78rem;">
+            {% for si in sale.items.all|slice:":2" %}{{ si.item.name }}{% if not forloop.last %}, {% endif %}{% endfor %}{% if sale.items.count > 2 %} +{{ sale.items.count|add:"-2" }} more{% endif %}
+          </td>
+          <td style="padding:11px 12px;">
+            <span style="background:#f1f5f9;border-radius:6px;padding:2px 8px;font-size:.72rem;font-weight:500;">{{ sale.notes|default:"—" }}</span>
+          </td>
+          <td style="padding:11px 12px;text-align:right;font-weight:700;color:var(--success);">₹{{ sale.total_amount }}</td>
+          <td style="padding:11px 12px;text-align:center;">
+            <a href="{% url 'invoice' sale.pk %}" target="_blank"
+               style="background:#eef2ff;color:#6366f1;border-radius:6px;padding:3px 10px;font-size:.72rem;font-weight:600;text-decoration:none;">
+              Bill
+            </a>
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="6" style="padding:32px;text-align:center;color:var(--text-muted);">No sales yet. <a href="{% url 'pos' %}">Record first sale</a>.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+/* Tab switching */
+function switchTab(id) {
+  document.querySelectorAll('.cat-tab-panel').forEach(p => p.classList.add('d-none'));
+  document.getElementById(id).classList.remove('d-none');
+  document.querySelectorAll('.cat-tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + id.replace('cat-','')).classList.add('active');
+}
+
+/* Sales chart */
+const labels = [{% for d in chart_labels %}"{{ d }}",{% endfor %}];
+const data   = [{% for v in chart_values %}{{ v }},{% endfor %}];
+
+new Chart(document.getElementById('salesChart'), {
+  type: 'bar',
+  data: {
+    labels,
+    datasets: [{
+      label: 'Revenue (₹)',
+      data,
+      backgroundColor: data.map((v,i) => i === data.length-1 ? 'rgba(99,102,241,.5)' : 'rgba(99,102,241,.15)'),
+      borderColor: '#6366f1',
+      borderWidth: 2,
+      borderRadius: 6,
+      hoverBackgroundColor: 'rgba(99,102,241,.4)',
+    }]
+  },
+  options: {
+    responsive:true,
+    plugins: {
+      legend:{display:false},
+      tooltip:{ callbacks:{ label: ctx => '₹' + ctx.parsed.y.toLocaleString('en-IN') } }
+    },
+    scales: {
+      y: { beginAtZero:true, grid:{color:'#f1f5f9'}, ticks:{font:{family:'Inter',size:11}, callback:v=>'₹'+v} },
+      x: { grid:{display:false}, ticks:{font:{family:'Inter',size:11}} }
+    }
+  }
+});
+</script>
+{% endblock %}

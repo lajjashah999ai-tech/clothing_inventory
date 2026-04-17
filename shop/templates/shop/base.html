@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}Vastradhaga{% endblock %} — Vastradhaga</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #6366f1;
+      --primary-dark: #4f46e5;
+      --accent: #8b5cf6;
+      --success: #10b981;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+      --info: #06b6d4;
+      --bg: #f1f5f9;
+      --card-bg: #ffffff;
+      --sidebar-bg: #0f172a;
+      --sidebar-hover: #1e293b;
+      --sidebar-active: #6366f1;
+      --text: #1e293b;
+      --text-muted: #64748b;
+      --border: #e2e8f0;
+      --radius: 16px;
+      --radius-sm: 10px;
+      --shadow: 0 1px 3px rgba(0,0,0,.06), 0 4px 16px rgba(0,0,0,.04);
+      --shadow-md: 0 4px 20px rgba(99,102,241,.12);
+    }
+    * { font-family: 'Inter', sans-serif; }
+    body { background: var(--bg); color: var(--text); }
+
+    /* Sidebar */
+    .sidebar {
+      width: 240px; min-height: 100vh;
+      background: var(--sidebar-bg);
+      position: fixed; left: 0; top: 0; z-index: 100;
+      display: flex; flex-direction: column;
+      transition: transform .3s ease;
+    }
+    .sidebar-brand {
+      padding: 20px 20px 14px;
+      border-bottom: 1px solid #ffffff12;
+    }
+    .sidebar-brand .shop-name {
+      font-size: 1.1rem; font-weight: 800;
+      background: linear-gradient(135deg, #a5b4fc, #818cf8);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      letter-spacing: -.3px;
+    }
+    .sidebar-brand .shop-sub {
+      font-size: .7rem; color: #475569; margin-top: 2px;
+    }
+    .sidebar-nav { flex: 1; padding: 12px 0; overflow-y: auto; }
+    .nav-section {
+      font-size: .65rem; text-transform: uppercase; letter-spacing: 1.2px;
+      color: #334155; padding: 14px 20px 6px; font-weight: 600;
+    }
+    .sidebar-link {
+      display: flex; align-items: center; gap: 10px;
+      padding: 9px 20px; color: #94a3b8;
+      text-decoration: none; font-size: .875rem; font-weight: 500;
+      border-radius: 0; transition: all .2s ease;
+      border-left: 3px solid transparent; margin: 1px 0;
+    }
+    .sidebar-link:hover { color: #e2e8f0; background: var(--sidebar-hover); }
+    .sidebar-link.active {
+      color: #fff; background: var(--sidebar-hover);
+      border-left-color: var(--primary);
+    }
+    .sidebar-link .icon {
+      width: 32px; height: 32px; border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: .9rem; flex-shrink: 0;
+    }
+    .sidebar-link.active .icon { background: var(--primary); color: #fff; }
+    .sidebar-link:not(.active) .icon { background: #1e293b; }
+
+    /* Main */
+    .main-wrap {
+      margin-left: 240px; min-height: 100vh;
+      transition: margin .3s ease;
+    }
+    .topbar {
+      background: var(--card-bg); border-bottom: 1px solid var(--border);
+      padding: 14px 24px; display: flex; align-items: center;
+      justify-content: space-between; position: sticky; top: 0; z-index: 99;
+    }
+    .page-content { padding: 24px; }
+
+    /* Cards */
+    .card {
+      border: 1px solid var(--border) !important;
+      border-radius: var(--radius) !important;
+      box-shadow: var(--shadow) !important;
+      transition: box-shadow .2s ease;
+    }
+    .card:hover { box-shadow: var(--shadow-md) !important; }
+
+    /* Stat cards */
+    .stat-card {
+      border-radius: var(--radius) !important;
+      border: none !important;
+      padding: 20px;
+      position: relative; overflow: hidden;
+    }
+    .stat-card::after {
+      content: ''; position: absolute;
+      right: -20px; bottom: -20px;
+      width: 100px; height: 100px; border-radius: 50%;
+      opacity: .08;
+    }
+    .stat-card.indigo { background: linear-gradient(135deg, #6366f1, #8b5cf6); }
+    .stat-card.indigo::after { background: #fff; }
+    .stat-card.emerald { background: linear-gradient(135deg, #10b981, #059669); }
+    .stat-card.amber { background: linear-gradient(135deg, #f59e0b, #d97706); }
+    .stat-card.rose { background: linear-gradient(135deg, #ef4444, #dc2626); }
+    .stat-card.cyan { background: linear-gradient(135deg, #06b6d4, #0891b2); }
+    .stat-card .stat-label { color: rgba(255,255,255,.75); font-size: .8rem; font-weight: 500; }
+    .stat-card .stat-value { color: #fff; font-size: 2rem; font-weight: 800; line-height: 1; margin: 6px 0 2px; }
+    .stat-card .stat-sub { color: rgba(255,255,255,.65); font-size: .75rem; }
+    .stat-card .stat-icon { position: absolute; right: 20px; top: 50%; transform: translateY(-50%); font-size: 2.5rem; color: rgba(255,255,255,.2); }
+
+    /* Category tiles */
+    .cat-tile {
+      border-radius: var(--radius) !important;
+      border: 1px solid var(--border) !important;
+      padding: 20px; cursor: pointer;
+      transition: all .2s ease; text-decoration: none;
+    }
+    .cat-tile:hover { transform: translateY(-2px); box-shadow: var(--shadow-md) !important; }
+    .cat-tile .cat-icon {
+      width: 48px; height: 48px; border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.3rem; margin-bottom: 12px;
+    }
+    .cat-tile .cat-name { font-weight: 700; color: var(--text); font-size: .95rem; }
+    .cat-tile .cat-count { font-size: .8rem; color: var(--text-muted); }
+
+    /* Product cards */
+    .product-card {
+      border-radius: var(--radius) !important;
+      border: 1px solid var(--border) !important;
+      padding: 16px; transition: all .2s ease;
+      cursor: pointer; text-decoration: none;
+    }
+    .product-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-md) !important; border-color: var(--primary) !important; }
+    .product-card .p-badge {
+      display: inline-flex; align-items: center; gap: 4px;
+      padding: 3px 10px; border-radius: 20px;
+      font-size: .7rem; font-weight: 600;
+    }
+    .p-badge.in-stock { background: #d1fae5; color: #065f46; }
+    .p-badge.low-stock { background: #fef3c7; color: #92400e; }
+    .p-badge.out-stock { background: #fee2e2; color: #991b1b; }
+
+    /* Category Tabs */
+    .cat-tab-btn {
+      background: none; border: none; padding: 14px 16px;
+      font-size: .8rem; font-weight: 600; color: var(--text-muted);
+      border-bottom: 3px solid transparent; white-space: nowrap; cursor: pointer;
+      transition: all .2s;
+    }
+    .cat-tab-btn:hover { color: var(--text); }
+    .cat-tab-btn.active { color: var(--primary); border-bottom-color: var(--primary); }
+    .cat-tabs { scrollbar-width: none; }
+    .cat-tabs::-webkit-scrollbar { display: none; }
+
+    /* Buttons */
+    .btn-primary { background: var(--primary); border-color: var(--primary); font-weight: 500; }
+    .btn-primary:hover { background: var(--primary-dark); border-color: var(--primary-dark); }
+    .btn-pill { border-radius: 50px !important; }
+
+    /* Tables */
+    .modern-table { border-collapse: separate; border-spacing: 0; }
+    .modern-table thead th {
+      background: #f8fafc; font-size: .75rem; text-transform: uppercase;
+      letter-spacing: .6px; color: var(--text-muted); font-weight: 600;
+      border-bottom: 1px solid var(--border); padding: 12px 16px;
+    }
+    .modern-table tbody td { padding: 14px 16px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+    .modern-table tbody tr:last-child td { border-bottom: none; }
+    .modern-table tbody tr:hover td { background: #f8fafc; }
+
+    /* Badges */
+    .badge-pill { border-radius: 50px !important; padding: 4px 12px; font-weight: 500; }
+
+    /* Form controls */
+    .form-control, .form-select {
+      border-radius: var(--radius-sm) !important;
+      border-color: var(--border);
+      padding: .6rem .9rem;
+      font-size: .875rem;
+    }
+    .form-control:focus, .form-select:focus {
+      border-color: var(--primary); box-shadow: 0 0 0 3px rgba(99,102,241,.1);
+    }
+    .form-label { font-weight: 600; font-size: .82rem; color: var(--text-muted); margin-bottom: 6px; }
+
+    /* Alerts */
+    .alert { border-radius: var(--radius-sm) !important; border: none !important; font-size: .875rem; }
+    .alert-success { background: #d1fae5; color: #065f46; }
+    .alert-danger { background: #fee2e2; color: #991b1b; }
+    .alert-warning { background: #fef3c7; color: #92400e; }
+    .alert-info { background: #e0f2fe; color: #075985; }
+
+    /* Mobile */
+    @media (max-width: 768px) {
+      .sidebar { transform: translateX(-100%); }
+      .sidebar.open { transform: translateX(0); }
+      .main-wrap { margin-left: 0; }
+      .page-content { padding: 16px; }
+    }
+
+    /* Page header */
+    .page-header { margin-bottom: 24px; }
+    .page-header h4 { font-size: 1.25rem; font-weight: 800; color: var(--text); margin: 0; }
+    .page-header .breadcrumb { font-size: .75rem; color: var(--text-muted); margin: 0; }
+    .breadcrumb-item + .breadcrumb-item::before { color: var(--text-muted); }
+
+    /* Search bar */
+    .search-wrap { position: relative; }
+    .search-wrap .bi-search { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: .9rem; }
+    .search-wrap input { padding-left: 36px !important; }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 5px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 99px; }
+
+    /* Print hide */
+    @media print { .sidebar, .topbar, .no-print { display: none !important; } .main-wrap { margin: 0; } }
+  </style>
+  {% block extra_head %}{% endblock %}
+</head>
+<body>
+
+{% if user.is_authenticated %}
+
+<!-- Sidebar -->
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-brand">
+    <div style="font-size:1.6rem; margin-bottom:6px;">👗</div>
+    <div class="shop-name">Vastradhaga</div>
+    <div class="shop-sub">Clothing Shop Management</div>
+  </div>
+
+  <nav class="sidebar-nav">
+    <div class="nav-section">Overview</div>
+    <a href="{% url 'dashboard' %}" class="sidebar-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
+      <span class="icon"><i class="bi bi-grid-1x2-fill"></i></span>Dashboard
+    </a>
+
+    <div class="nav-section">Inventory</div>
+    <a href="{% url 'item_list' %}" class="sidebar-link {% if request.resolver_match.url_name == 'item_list' or request.resolver_match.url_name == 'item_add' or request.resolver_match.url_name == 'item_edit' %}active{% endif %}">
+      <span class="icon"><i class="bi bi-box-seam-fill"></i></span>Products
+    </a>
+    <a href="{% url 'item_bulk_add' %}" class="sidebar-link {% if request.resolver_match.url_name == 'item_bulk_add' %}active{% endif %}">
+      <span class="icon"><i class="bi bi-table"></i></span>Bulk Add
+    </a>
+    <a href="{% url 'category_list' %}" class="sidebar-link {% if 'category' in request.resolver_match.url_name %}active{% endif %}">
+      <span class="icon"><i class="bi bi-grid-fill"></i></span>Categories
+    </a>
+
+    <div class="nav-section">Sales</div>
+    <a href="{% url 'pos' %}" class="sidebar-link {% if request.resolver_match.url_name == 'pos' %}active{% endif %}">
+      <span class="icon"><i class="bi bi-cart-fill"></i></span>New Sale
+    </a>
+    <a href="{% url 'sale_list' %}" class="sidebar-link {% if request.resolver_match.url_name == 'sale_list' %}active{% endif %}">
+      <span class="icon"><i class="bi bi-receipt-cutoff"></i></span>Sales History
+    </a>
+
+    <div class="nav-section">Reports</div>
+    <a href="{% url 'report_stock' %}" class="sidebar-link {% if request.resolver_match.url_name == 'report_stock' %}active{% endif %}">
+      <span class="icon"><i class="bi bi-clipboard2-data-fill"></i></span>Stock Report
+    </a>
+    <a href="{% url 'report_low_stock' %}" class="sidebar-link {% if request.resolver_match.url_name == 'report_low_stock' %}active{% endif %}">
+      <span class="icon"><i class="bi bi-exclamation-triangle-fill"></i></span>Low Stock
+      {% if low_stock_count > 0 %}
+      <span style="margin-left:auto;background:#ef4444;color:#fff;border-radius:99px;padding:1px 7px;font-size:.65rem;font-weight:700;">{{ low_stock_count }}</span>
+      {% endif %}
+    </a>
+    <a href="{% url 'report_sales' %}" class="sidebar-link {% if request.resolver_match.url_name == 'report_sales' %}active{% endif %}">
+      <span class="icon"><i class="bi bi-bar-chart-fill"></i></span>Sales Report
+    </a>
+  </nav>
+
+  <div style="padding:16px; border-top:1px solid #ffffff12;">
+    <a href="{% url 'logout' %}" class="sidebar-link" style="border-radius:10px; color:#f87171;">
+      <span class="icon" style="background:#1e293b;"><i class="bi bi-box-arrow-right"></i></span>Logout
+    </a>
+  </div>
+</aside>
+
+<!-- Main Wrapper -->
+<div class="main-wrap">
+  <!-- Topbar -->
+  <div class="topbar">
+    <div class="d-flex align-items-center gap-3">
+      <button class="btn btn-sm btn-light d-md-none" onclick="document.getElementById('sidebar').classList.toggle('open')">
+        <i class="bi bi-list fs-5"></i>
+      </button>
+      <div>
+        <div style="font-weight:700; font-size:.9rem; color:var(--text);">{% block page_title %}{% endblock %}</div>
+        <div style="font-size:.72rem; color:var(--text-muted);">{% now "l, d F Y" %}</div>
+      </div>
+    </div>
+    <div class="d-flex align-items-center gap-2">
+      <a href="{% url 'pos' %}" class="btn btn-primary btn-pill btn-sm px-3">
+        <i class="bi bi-plus-lg me-1"></i>New Sale
+      </a>
+      <div class="d-flex align-items-center gap-2 ms-2">
+        <div style="width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,#6366f1,#8b5cf6);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:.85rem;">
+          {{ request.user.username|first|upper }}
+        </div>
+        <span style="font-size:.82rem;font-weight:600;color:var(--text);">{{ request.user.username }}</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Flash messages -->
+  {% if messages %}
+  <div style="padding: 0 24px; margin-top: 16px;">
+    {% for message in messages %}
+    <div class="alert alert-{{ message.tags }} alert-dismissible fade show d-flex align-items-center gap-2" role="alert">
+      {% if message.tags == 'success' %}<i class="bi bi-check-circle-fill"></i>
+      {% elif message.tags == 'error' or message.tags == 'danger' %}<i class="bi bi-x-circle-fill"></i>
+      {% elif message.tags == 'warning' %}<i class="bi bi-exclamation-triangle-fill"></i>
+      {% else %}<i class="bi bi-info-circle-fill"></i>{% endif %}
+      {{ message }}
+      <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert"></button>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <!-- Page Content -->
+  <div class="page-content">
+    {% block content %}{% endblock %}
+  </div>
+</div>
+
+{% else %}
+  {% block auth_content %}{% endblock %}
+{% endif %}
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+{% block extra_js %}{% endblock %}
+</body>
+</html>

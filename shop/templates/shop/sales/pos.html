@@ -1,0 +1,268 @@
+{% extends 'shop/base.html' %}
+{% block title %}New Sale{% endblock %}
+{% block page_title %}New Sale — POS{% endblock %}
+
+{% block extra_head %}
+<style>
+  .pos-product-card {
+    border: 2px solid var(--border); border-radius: 14px;
+    padding: 14px; cursor: pointer; transition: all .15s ease;
+    background: #fff; user-select: none;
+  }
+  .pos-product-card:hover { border-color: var(--primary); background: #fafafe; transform: translateY(-1px); }
+  .pos-product-card.selected { border-color: var(--primary); background: #eef2ff; }
+  .pos-product-card.out { opacity: .45; cursor: not-allowed; }
+  .cart-item { padding: 10px 0; border-bottom: 1px solid var(--border); }
+  .cart-item:last-child { border-bottom: none; }
+  .qty-btn { width: 28px; height: 28px; border-radius: 8px; border: 1px solid var(--border);
+             background: #f8fafc; display: flex; align-items: center; justify-content: center;
+             cursor: pointer; font-size: .9rem; font-weight: 700; color: var(--text); transition: all .15s; }
+  .qty-btn:hover { background: var(--primary); color: #fff; border-color: var(--primary); }
+  .pos-panel { position: sticky; top: 80px; max-height: calc(100vh - 100px); overflow-y: auto; }
+  .cat-filter-chip {
+    display: inline-block; padding: 5px 14px; border-radius: 20px;
+    font-size: .78rem; font-weight: 600; cursor: pointer; transition: all .15s;
+    border: 2px solid var(--border); background: #fff; color: var(--text-muted);
+  }
+  .cat-filter-chip.active, .cat-filter-chip:hover {
+    background: var(--primary); color: #fff; border-color: var(--primary);
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<form method="post" id="saleForm">
+{% csrf_token %}
+<div class="row g-3" style="align-items:flex-start;">
+
+  <!-- LEFT: Product Browser -->
+  <div class="col-lg-7">
+    <!-- Search -->
+    <div class="search-wrap mb-3">
+      <i class="bi bi-search"></i>
+      <input type="text" id="prodSearch" class="form-control" placeholder="Search product by name or size...">
+    </div>
+
+    <!-- Category Chips -->
+    <div class="mb-3 d-flex flex-wrap gap-2" id="catChips">
+      <span class="cat-filter-chip active" data-cat="">All</span>
+      {% for cat in categories %}
+      <span class="cat-filter-chip" data-cat="{{ cat.pk }}">{{ cat.name }}</span>
+      {% endfor %}
+    </div>
+
+    <!-- Product Cards Grid -->
+    <div class="row g-2" id="productGrid">
+      {% for item in items %}
+      <div class="col-6 col-md-4 product-item"
+           data-id="{{ item.pk }}"
+           data-name="{{ item.name }}"
+           data-size="{{ item.size }}"
+           data-price="{{ item.selling_price }}"
+           data-stock="{{ item.quantity }}"
+           data-cat="{{ item.category.pk }}">
+        <div class="pos-product-card {% if item.quantity == 0 %}out{% endif %}"
+             onclick="{% if item.quantity > 0 %}addToCart({{ item.pk }}, '{{ item.name|escapejs }}', '{{ item.size }}', {{ item.selling_price }}, {{ item.quantity }}){% endif %}">
+          <div class="d-flex justify-content-between align-items-start mb-1">
+            <span style="background:#eef2ff;color:#6366f1;padding:2px 8px;border-radius:6px;font-size:.68rem;font-weight:600;">{{ item.category.name }}</span>
+            {% if item.quantity == 0 %}
+              <span style="background:#fee2e2;color:#ef4444;padding:2px 8px;border-radius:6px;font-size:.68rem;font-weight:600;">Out</span>
+            {% elif item.is_low_stock %}
+              <span style="background:#fef3c7;color:#92400e;padding:2px 8px;border-radius:6px;font-size:.68rem;font-weight:600;">Low</span>
+            {% endif %}
+          </div>
+          <div style="font-weight:700;font-size:.875rem;margin:6px 0 2px;color:var(--text);">{{ item.name }}</div>
+          <div style="font-size:.75rem;color:var(--text-muted);">Size: {{ item.size }}</div>
+          <div class="d-flex align-items-center justify-content-between mt-2">
+            <span style="font-weight:800;color:var(--primary);font-size:.95rem;">₹{{ item.selling_price }}</span>
+            <span style="font-size:.72rem;color:var(--text-muted);">{{ item.quantity }} left</span>
+          </div>
+        </div>
+      </div>
+      {% empty %}
+      <div class="col-12 text-center py-5 text-muted">
+        <i class="bi bi-box-seam fs-1 d-block mb-2"></i>No products available.
+      </div>
+      {% endfor %}
+    </div>
+    <div id="noResults" class="text-center py-4 text-muted d-none">
+      <i class="bi bi-search fs-2 d-block mb-2"></i>No products match your search.
+    </div>
+  </div>
+
+  <!-- RIGHT: Cart Panel -->
+  <div class="col-lg-5 pos-panel">
+    <div class="card" style="overflow:hidden;">
+      <div style="background:linear-gradient(135deg,#6366f1,#8b5cf6);padding:16px 20px;">
+        <div style="color:#fff;font-weight:800;font-size:1rem;"><i class="bi bi-cart3 me-2"></i>Sale Cart</div>
+        <div style="color:rgba(255,255,255,.7);font-size:.75rem;" id="cartCount">0 items</div>
+      </div>
+
+      <div class="p-3">
+        <!-- Cart Items -->
+        <div id="cartItems" style="min-height:60px;max-height:340px;overflow-y:auto;">
+          <div id="emptyCart" class="text-center py-4 text-muted">
+            <i class="bi bi-cart3 fs-2 d-block mb-1"></i>
+            <div style="font-size:.82rem;">Click a product to add to cart</div>
+          </div>
+        </div>
+
+        <!-- Hidden inputs -->
+        <div id="hiddenInputs"></div>
+
+        <hr style="margin:12px 0;">
+
+        <!-- Notes -->
+        <div class="mb-3">
+          <label class="form-label" style="font-size:.78rem;">Notes (optional)</label>
+          <input type="text" name="notes" class="form-control" style="font-size:.82rem;" placeholder="Customer name, payment mode...">
+        </div>
+
+        <!-- Total -->
+        <div style="background:#f8fafc;border-radius:12px;padding:14px;margin-bottom:14px;">
+          <div class="d-flex justify-content-between align-items-center">
+            <span style="color:var(--text-muted);font-size:.875rem;">Total Amount</span>
+            <span id="grandTotal" style="font-size:1.6rem;font-weight:800;color:var(--success);">₹0.00</span>
+          </div>
+        </div>
+
+        <button type="submit" id="checkoutBtn" class="btn btn-success w-100 disabled"
+                style="border-radius:12px;padding:14px;font-weight:700;font-size:1rem;">
+          <i class="bi bi-check-circle-fill me-2"></i>Complete Sale
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+</form>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  const cart = {};
+
+  function addToCart(id, name, size, price, stock) {
+    if (cart[id]) {
+      if (cart[id].qty < stock) cart[id].qty++;
+    } else {
+      cart[id] = { id, name, size, price, stock, qty: 1 };
+    }
+    renderCart();
+    // highlight card
+    document.querySelectorAll('.product-item').forEach(el => {
+      if (el.dataset.id == id) el.querySelector('.pos-product-card').classList.add('selected');
+    });
+  }
+
+  function removeFromCart(id) {
+    delete cart[id];
+    document.querySelectorAll('.product-item').forEach(el => {
+      if (el.dataset.id == id) el.querySelector('.pos-product-card').classList.remove('selected');
+    });
+    renderCart();
+  }
+
+  function changeQty(id, delta) {
+    if (!cart[id]) return;
+    cart[id].qty += delta;
+    if (cart[id].qty <= 0) removeFromCart(id);
+    else if (cart[id].qty > cart[id].stock) cart[id].qty = cart[id].stock;
+    else renderCart();
+  }
+
+  function renderCart() {
+    const keys = Object.keys(cart);
+    const itemsDiv = document.getElementById('cartItems');
+    const hidden = document.getElementById('hiddenInputs');
+    const emptyDiv = document.getElementById('emptyCart');
+    let total = 0;
+
+    hidden.innerHTML = '';
+    if (keys.length === 0) {
+      itemsDiv.innerHTML = '';
+      emptyDiv.classList.remove('d-none');
+      document.getElementById('grandTotal').textContent = '₹0.00';
+      document.getElementById('cartCount').textContent = '0 items';
+      document.getElementById('checkoutBtn').classList.add('disabled');
+      return;
+    }
+
+    emptyDiv.classList.add('d-none');
+    let html = '';
+    keys.forEach(id => {
+      const item = cart[id];
+      const sub = (item.price * item.qty).toFixed(2);
+      total += parseFloat(sub);
+      html += `
+        <div class="cart-item">
+          <div class="d-flex justify-content-between align-items-start mb-1">
+            <div style="flex:1;">
+              <div style="font-weight:600;font-size:.83rem;">${item.name}</div>
+              <div style="font-size:.72rem;color:var(--text-muted);">Size: ${item.size} · ₹${item.price}</div>
+            </div>
+            <button type="button" onclick="removeFromCart(${id})"
+              style="background:none;border:none;color:#ef4444;font-size:.85rem;padding:0 4px;">
+              <i class="bi bi-x-lg"></i>
+            </button>
+          </div>
+          <div class="d-flex align-items-center justify-content-between">
+            <div class="d-flex align-items-center gap-2">
+              <div class="qty-btn" onclick="changeQty(${id},-1)">−</div>
+              <span style="font-weight:700;font-size:.9rem;min-width:24px;text-align:center;">${item.qty}</span>
+              <div class="qty-btn" onclick="changeQty(${id},1)">+</div>
+            </div>
+            <span style="font-weight:700;color:var(--primary);">₹${sub}</span>
+          </div>
+        </div>`;
+      hidden.innerHTML += `<input type="hidden" name="item_id[]" value="${id}">
+                           <input type="hidden" name="qty[]" value="${item.qty}">`;
+    });
+
+    itemsDiv.innerHTML = html;
+    document.getElementById('grandTotal').textContent = '₹' + total.toFixed(2);
+    const count = keys.reduce((s, k) => s + cart[k].qty, 0);
+    document.getElementById('cartCount').textContent = count + ' item' + (count !== 1 ? 's' : '');
+    document.getElementById('checkoutBtn').classList.remove('disabled');
+  }
+
+  // Search filter
+  document.getElementById('prodSearch').addEventListener('input', filterProducts);
+
+  // Category chips
+  let activeCat = '';
+  document.querySelectorAll('.cat-filter-chip').forEach(chip => {
+    chip.addEventListener('click', function() {
+      document.querySelectorAll('.cat-filter-chip').forEach(c => c.classList.remove('active'));
+      this.classList.add('active');
+      activeCat = this.dataset.cat;
+      filterProducts();
+    });
+  });
+
+  function filterProducts() {
+    const q = document.getElementById('prodSearch').value.toLowerCase();
+    let visible = 0;
+    document.querySelectorAll('.product-item').forEach(el => {
+      const name = el.dataset.name.toLowerCase();
+      const size = el.dataset.size.toLowerCase();
+      const cat = el.dataset.cat;
+      const matchQ = !q || name.includes(q) || size.includes(q);
+      const matchCat = !activeCat || cat === activeCat;
+      if (matchQ && matchCat) { el.style.display = ''; visible++; }
+      else el.style.display = 'none';
+    });
+    document.getElementById('noResults').classList.toggle('d-none', visible > 0);
+  }
+
+  // Pre-select product if coming from edit page
+  const urlParams = new URLSearchParams(window.location.search);
+  const preProduct = urlParams.get('product');
+  if (preProduct) {
+    const el = document.querySelector(`.product-item[data-id="${preProduct}"]`);
+    if (el && el.dataset.stock > 0) {
+      addToCart(parseInt(preProduct), el.dataset.name, el.dataset.size,
+                parseFloat(el.dataset.price), parseInt(el.dataset.stock));
+    }
+  }
+</script>
+{% endblock %}

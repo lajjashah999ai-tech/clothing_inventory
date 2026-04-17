@@ -1,0 +1,99 @@
+{% extends 'shop/base.html' %}
+{% block title %}Edit Product{% endblock %}
+{% block page_title %}Edit Product{% endblock %}
+
+{% block content %}
+<div class="d-flex align-items-center gap-3 mb-4">
+  <a href="{% url 'item_list' %}" class="btn btn-sm" style="background:#f1f5f9;border-radius:8px;color:var(--text);">
+    <i class="bi bi-arrow-left"></i>
+  </a>
+  <div>
+    <h4 style="font-weight:800;margin:0;">{{ item.name }}</h4>
+    <div style="font-size:.8rem;color:var(--text-muted);">{{ item.category.name }} · Size {{ item.size }}</div>
+  </div>
+</div>
+
+<div class="row g-3">
+  <!-- Edit Form -->
+  <div class="col-lg-7">
+    <div class="card p-4">
+      <h6 class="fw-bold mb-3">Product Details</h6>
+      <form method="post">
+        {% csrf_token %}
+        <div class="row g-3">
+          <div class="col-12">
+            <label class="form-label">Product Name</label>
+            {{ form.name }}
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Category</label>
+            {{ form.category }}
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Size</label>
+            {{ form.size }}
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Current Stock</label>
+            {{ form.quantity }}
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Cost Price (₹)</label>
+            {{ form.purchase_price }}
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Selling Price (₹)</label>
+            {{ form.selling_price }}
+          </div>
+        </div>
+        <div class="d-flex gap-2 mt-3">
+          <button type="submit" class="btn btn-primary flex-fill" style="border-radius:10px;">Save Changes</button>
+          <a href="{% url 'item_list' %}" class="btn flex-fill" style="background:#f1f5f9;border-radius:10px;color:var(--text);font-weight:500;">Cancel</a>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Restock Panel -->
+  <div class="col-lg-5">
+    <div class="card p-4" style="border-left:4px solid var(--success) !important;">
+      <div class="d-flex align-items-center gap-2 mb-1">
+        <i class="bi bi-plus-circle-fill" style="color:var(--success);font-size:1.1rem;"></i>
+        <h6 class="fw-bold mb-0">Quick Restock</h6>
+      </div>
+      <p style="font-size:.8rem;color:var(--text-muted);margin-bottom:16px;">
+        Add more units to existing stock
+      </p>
+
+      <!-- Current Stock Display -->
+      <div style="background:#d1fae5;border-radius:12px;padding:14px;text-align:center;margin-bottom:16px;">
+        <div style="font-size:.75rem;color:#065f46;font-weight:500;">Current Stock</div>
+        <div style="font-size:2.5rem;font-weight:800;color:#065f46;line-height:1;">{{ item.quantity }}</div>
+        <div style="font-size:.72rem;color:#065f46;">units</div>
+      </div>
+
+      <form method="post">
+        {% csrf_token %}
+        <label class="form-label">Add Quantity</label>
+        <div class="input-group mb-3">
+          <button type="button" class="btn" style="background:#f1f5f9;border:1px solid var(--border);border-right:none;" onclick="let i=document.getElementById('rqty');if(i.value>1)i.value=parseInt(i.value)-1;">−</button>
+          <input type="number" name="restock_qty" id="rqty" class="form-control text-center fw-bold"
+                 value="10" min="1" style="border-left:none;border-right:none;">
+          <button type="button" class="btn" style="background:#f1f5f9;border:1px solid var(--border);border-left:none;" onclick="let i=document.getElementById('rqty');i.value=parseInt(i.value)+1;">+</button>
+        </div>
+        <button type="submit" name="restock" class="btn w-100" style="background:var(--success);color:#fff;border-radius:10px;font-weight:600;">
+          <i class="bi bi-plus-lg me-2"></i>Add to Stock
+        </button>
+      </form>
+    </div>
+
+    <!-- Quick sale record -->
+    <div class="card p-4 mt-3" style="border-left:4px solid var(--primary) !important;">
+      <h6 class="fw-bold mb-3"><i class="bi bi-cart-plus me-2" style="color:var(--primary);"></i>Record Quick Sale</h6>
+      <a href="{% url 'pos' %}?product={{ item.pk }}" class="btn btn-primary w-100" style="border-radius:10px;">
+        Sell This Product
+      </a>
+    </div>
+  </div>
+</div>
+{% endblock %}

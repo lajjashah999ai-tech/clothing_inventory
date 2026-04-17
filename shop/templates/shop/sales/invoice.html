@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Invoice #{{ sale.pk }} — Vastradhaga</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    * { font-family: 'Inter', sans-serif; margin: 0; padding: 0; box-sizing: border-box; }
+    body { background: #f1f5f9; padding: 24px; }
+    .invoice-wrap { max-width: 680px; margin: 0 auto; background: #fff; border-radius: 20px; overflow: hidden; box-shadow: 0 8px 40px rgba(0,0,0,.12); }
+
+    /* Header */
+    .inv-header { background: linear-gradient(135deg, #0f172a, #1e293b); padding: 32px 36px; color: #fff; }
+    .shop-logo { font-size: 1.6rem; margin-bottom: 4px; }
+    .shop-name { font-size: 1.4rem; font-weight: 800; letter-spacing: -.3px; color: #fff; }
+    .shop-tagline { font-size: .78rem; color: #94a3b8; margin-top: 2px; }
+    .inv-meta { text-align: right; }
+    .inv-meta .inv-num { font-size: 1.5rem; font-weight: 800; color: #a5b4fc; }
+    .inv-meta .inv-label { font-size: .72rem; color: #64748b; text-transform: uppercase; letter-spacing: .8px; }
+    .inv-meta .inv-date { font-size: .82rem; color: #94a3b8; margin-top: 4px; }
+
+    /* Body */
+    .inv-body { padding: 28px 36px; }
+
+    /* Bill info row */
+    .bill-row { display: flex; justify-content: space-between; margin-bottom: 24px; }
+    .bill-box { background: #f8fafc; border-radius: 12px; padding: 14px 18px; flex: 1; margin: 0 6px; }
+    .bill-box:first-child { margin-left: 0; }
+    .bill-box:last-child { margin-right: 0; }
+    .bill-box-label { font-size: .68rem; text-transform: uppercase; letter-spacing: .6px; color: #94a3b8; font-weight: 600; margin-bottom: 4px; }
+    .bill-box-val { font-size: .9rem; font-weight: 700; color: #1e293b; }
+
+    /* Table */
+    table { width: 100%; border-collapse: collapse; margin: 8px 0 20px; }
+    thead th { background: #f1f5f9; font-size: .72rem; text-transform: uppercase; letter-spacing: .6px; color: #64748b; font-weight: 600; padding: 10px 14px; text-align: left; }
+    thead th:last-child { text-align: right; }
+    tbody td { padding: 12px 14px; border-bottom: 1px solid #f1f5f9; font-size: .875rem; color: #1e293b; vertical-align: middle; }
+    tbody td:last-child { text-align: right; font-weight: 600; }
+    tbody tr:last-child td { border-bottom: none; }
+
+    /* Totals */
+    .totals { border-top: 2px solid #f1f5f9; padding-top: 16px; }
+    .total-row { display: flex; justify-content: space-between; padding: 4px 0; font-size: .875rem; color: #64748b; }
+    .total-row.grand { font-size: 1.1rem; font-weight: 800; color: #1e293b; padding-top: 10px; margin-top: 8px; border-top: 1px dashed #e2e8f0; }
+
+    /* Footer */
+    .inv-footer { background: #f8fafc; padding: 20px 36px; text-align: center; border-top: 1px solid #e2e8f0; }
+    .inv-footer p { font-size: .78rem; color: #94a3b8; }
+    .inv-footer .thank-you { font-size: 1rem; font-weight: 700; color: #6366f1; margin-bottom: 4px; }
+
+    /* Print */
+    .print-btn { display: flex; gap: 12px; justify-content: center; margin: 20px 0; }
+    .print-btn button, .print-btn a {
+      padding: 10px 28px; border-radius: 50px; border: none;
+      font-size: .875rem; font-weight: 600; cursor: pointer; text-decoration: none;
+      display: inline-flex; align-items: center; gap: 8px;
+    }
+    .btn-print { background: linear-gradient(135deg, #6366f1, #8b5cf6); color: #fff; }
+    .btn-back { background: #f1f5f9; color: #1e293b; }
+    @media print {
+      body { background: #fff; padding: 0; }
+      .invoice-wrap { box-shadow: none; border-radius: 0; }
+      .print-btn { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="print-btn no-print">
+  <a href="{% url 'pos' %}" class="btn-back">🛒 New Sale</a>
+  <a href="{% url 'sale_list' %}" class="btn-back">← All Bills</a>
+  <button class="btn-print" onclick="window.print()">🖨️ Print / Save PDF</button>
+</div>
+
+<div class="invoice-wrap">
+  <!-- Header -->
+  <div class="inv-header">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+      <div>
+        <div class="shop-logo">👗</div>
+        <div class="shop-name">Vastradhaga</div>
+        <div class="shop-tagline">Clothing Shop</div>
+      </div>
+      <div class="inv-meta">
+        <div class="inv-label">Invoice</div>
+        <div class="inv-num">#{{ sale.pk }}</div>
+        <div class="inv-date">{{ sale.sale_date|date:"d M Y, h:i A" }}</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Body -->
+  <div class="inv-body">
+    <!-- Bill Info -->
+    <div class="bill-row">
+      <div class="bill-box">
+        <div class="bill-box-label">Bill To</div>
+        <div class="bill-box-val">{{ sale.notes|default:"Walk-in Customer" }}</div>
+      </div>
+      <div class="bill-box">
+        <div class="bill-box-label">Bill Date</div>
+        <div class="bill-box-val">{{ sale.sale_date|date:"d M Y" }}</div>
+      </div>
+      <div class="bill-box">
+        <div class="bill-box-label">Bill No.</div>
+        <div class="bill-box-val" style="color:#6366f1;">#VAD-{{ sale.pk|stringformat:"04d" }}</div>
+      </div>
+    </div>
+
+    <!-- Items Table -->
+    <table>
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Product</th>
+          <th>Category</th>
+          <th>Size</th>
+          <th style="text-align:center;">Qty</th>
+          <th style="text-align:right;">Unit Price</th>
+          <th>Subtotal</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for si in sale.items.all %}
+        <tr>
+          <td style="color:#94a3b8;font-size:.8rem;">{{ forloop.counter }}</td>
+          <td style="font-weight:600;">{{ si.item.name }}</td>
+          <td>
+            <span style="background:#eef2ff;color:#6366f1;padding:2px 8px;border-radius:6px;font-size:.72rem;font-weight:600;">{{ si.item.category.name }}</span>
+          </td>
+          <td>{{ si.item.size }}</td>
+          <td style="text-align:center;font-weight:600;">{{ si.quantity }}</td>
+          <td style="text-align:right;">₹{{ si.unit_price }}</td>
+          <td>₹{{ si.subtotal }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    <!-- Totals -->
+    <div class="totals">
+      <div class="total-row">
+        <span>Subtotal</span>
+        <span>₹{{ sale.total_amount }}</span>
+      </div>
+      <div class="total-row">
+        <span>Discount</span>
+        <span>₹0.00</span>
+      </div>
+      <div class="total-row grand">
+        <span>Total Amount</span>
+        <span style="color:#6366f1;">₹{{ sale.total_amount }}</span>
+      </div>
+    </div>
+
+    <!-- Signature -->
+    <div style="display:flex;justify-content:space-between;margin-top:32px;padding-top:20px;border-top:1px dashed #e2e8f0;">
+      <div style="text-align:center;">
+        <div style="border-top:1px solid #cbd5e1;width:160px;padding-top:8px;font-size:.75rem;color:#94a3b8;">Customer Signature</div>
+      </div>
+      <div style="text-align:center;">
+        <div style="border-top:1px solid #cbd5e1;width:160px;padding-top:8px;font-size:.75rem;color:#94a3b8;">Authorized Signature</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div class="inv-footer">
+    <div class="thank-you">Thank you for shopping with us! 🙏</div>
+    <p>Vastradhaga Clothing Shop · Exchange within 7 days with receipt</p>
+  </div>
+</div>
+
+<script>
+  // Auto-print when ?print=1 is in URL (set after POS checkout)
+  if (new URLSearchParams(window.location.search).get('print') === '1') {
+    setTimeout(() => window.print(), 600);
+  }
+</script>
+</body>
+</html>

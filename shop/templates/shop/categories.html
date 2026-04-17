@@ -1,0 +1,107 @@
+{% extends 'shop/base.html' %}
+{% block title %}Categories{% endblock %}
+{% block page_title %}Categories{% endblock %}
+
+{% block content %}
+<div class="d-flex align-items-center justify-content-between mb-4">
+  <div>
+    <h4 style="font-weight:800;margin:0;">Categories</h4>
+    <div style="font-size:.8rem;color:var(--text-muted);">Manage product categories</div>
+  </div>
+  <button class="btn btn-primary btn-pill px-4" data-bs-toggle="modal" data-bs-target="#addCatModal">
+    <i class="bi bi-plus-lg me-1"></i>Add Category
+  </button>
+</div>
+
+<!-- Category Cards Grid -->
+{% if categories %}
+<div class="row g-3">
+  {% for cat in categories %}
+  <div class="col-sm-6 col-md-4 col-lg-3">
+    <div class="card p-0" style="overflow:hidden;">
+      <div style="height:6px;background:{% cycle 'linear-gradient(90deg,#6366f1,#8b5cf6)' 'linear-gradient(90deg,#10b981,#059669)' 'linear-gradient(90deg,#f59e0b,#d97706)' 'linear-gradient(90deg,#ef4444,#dc2626)' 'linear-gradient(90deg,#06b6d4,#0891b2)' %};"></div>
+      <div class="p-4">
+        <div class="d-flex align-items-start justify-content-between mb-3">
+          <div style="width:48px;height:48px;border-radius:12px;background:{% cycle '#eef2ff' '#d1fae5' '#fef3c7' '#fee2e2' '#cffafe' %};display:flex;align-items:center;justify-content:center;font-size:1.4rem;">
+            {% cycle '🏷️' '👗' '👔' '👟' '🧣' %}
+          </div>
+          <div class="dropdown">
+            <button class="btn btn-sm" style="background:none;border:none;color:var(--text-muted);" data-bs-toggle="dropdown">
+              <i class="bi bi-three-dots-vertical"></i>
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end shadow border-0" style="border-radius:12px;font-size:.85rem;">
+              <li><a class="dropdown-item" href="{% url 'category_edit' cat.pk %}">
+                <i class="bi bi-pencil me-2 text-primary"></i>Edit
+              </a></li>
+              <li>
+                <form method="post" action="{% url 'category_delete' cat.pk %}"
+                      onsubmit="return confirm('Delete \'{{ cat.name }}\'?')">
+                  {% csrf_token %}
+                  <button type="submit" class="dropdown-item text-danger"
+                          {% if cat.item_count > 0 %}disabled{% endif %}>
+                    <i class="bi bi-trash me-2"></i>Delete
+                  </button>
+                </form>
+              </li>
+            </ul>
+          </div>
+        </div>
+        <div style="font-weight:700;font-size:1rem;color:var(--text);margin-bottom:4px;">{{ cat.name }}</div>
+        <div style="font-size:.78rem;color:var(--text-muted);">
+          {{ cat.item_count }} product{{ cat.item_count|pluralize }}
+          {% if cat.item_count > 0 %}· {{ cat.total_stock|default:"0" }} units{% endif %}
+        </div>
+        {% if cat.item_count > 0 %}
+        <div class="mt-3">
+          <a href="{% url 'item_list' %}?category={{ cat.pk }}" class="btn btn-sm w-100" style="background:#eef2ff;color:#6366f1;border-radius:8px;font-weight:500;font-size:.8rem;">
+            View Products
+          </a>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="card p-5 text-center">
+  <div style="font-size:3rem;margin-bottom:12px;">🏷️</div>
+  <h5 style="font-weight:700;">No categories yet</h5>
+  <p style="color:var(--text-muted);font-size:.875rem;">Create your first category to organize products.</p>
+  <button class="btn btn-primary btn-pill px-4 mx-auto" style="width:fit-content;" data-bs-toggle="modal" data-bs-target="#addCatModal">
+    <i class="bi bi-plus-lg me-1"></i>Add Category
+  </button>
+</div>
+{% endif %}
+
+<!-- Add Category Modal -->
+<div class="modal fade" id="addCatModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0" style="border-radius:20px;overflow:hidden;">
+      <div class="modal-header border-0 pb-0 pt-4 px-4">
+        <h5 class="modal-title fw-bold">Add New Category</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body px-4 pb-4">
+        <form method="post">
+          {% csrf_token %}
+          <div class="mb-3">
+            <label class="form-label">Category Name</label>
+            {{ form.name }}
+          </div>
+          <button type="submit" class="btn btn-primary w-100" style="border-radius:10px;">
+            <i class="bi bi-plus-circle me-2"></i>Add Category
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  // Auto-open modal on validation error
+  {% if form.errors %} new bootstrap.Modal(document.getElementById('addCatModal')).show(); {% endif %}
+</script>
+{% endblock %}
